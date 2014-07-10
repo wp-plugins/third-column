@@ -1,11 +1,11 @@
-<?php
+  <?php
 /*
-Plugin Name: Bang Admin: Third Column
+Plugin Name: Third Column
 Plugin URI: http://www.bang-on.net/thirdcolumn.zip
 Description: Adds a third column to the page and post edit form
 Author: Marcus Downing
 Author URI: http://www.bang-on.net
-Version: 1.0
+Version: 2.0
 */
 
 /*  Copyright 2011  Marcus Downing  (email : marcus@bang-on.net)
@@ -24,10 +24,78 @@ Version: 1.0
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+
+if (!defined('BANG_THIRD_COLUMN_DEBUG'))
+  define('BANG_THIRD_COLUMN_DEBUG', false);
+
+
+//  Initialise
+
+add_action('dbx_post_advanced', 'third_column_edit_form_init');
+function third_column_edit_form_init() {
+  if (BANG_THIRD_COLUMN_DEBUG) do_action('log', 'Third column: Initialise edit form');
+
+  // the JS and CSS
+  add_action('admin_enqueue_scripts', 'third_column_enqueue_scripts');
+
+  // the actual sidebar writers
+  add_action('edit_form_top', 'third_column_edit_form_top', 10, 1);
+  add_action('edit_form_after_title', 'third_column_edit_form_after_title', 10, 1);
+  add_action('edit_form_after_editor', 'third_column_edit_form_after_editor', 10, 1);
+  add_action('dbx_post_sidebar', 'third_column_dbx_post_sidebar', 10, 1);
+}
+
+function third_column_enqueue_scripts () {
+  //  change the screen options
+  add_screen_option('layout_columns', array('max' => 3, 'default' => 3) );
+   add_screen_option('mini_columns', array('max' => 3, 'default' => 3, 'label' => 'Mini columns') );
+
+  // add scripts and styles
+  wp_enqueue_style('third-column', plugins_url('admin.css', __FILE__));
+  wp_enqueue_script('third-column', plugins_url('scripts/third-column.js', __FILE__));
+}
+
+
 /* Edit form */
 
-add_action('submitpost_box', 'third_column_edit_form');
-add_action('submitpage_box', 'third_column_edit_form');
+
+function third_column_edit_form_top($post) {
+}
+
+function third_column_edit_form_after_title($post) {
+}
+
+function third_column_edit_form_after_editor($post) {
+  ?>
+  <div id='postbox-subcols'>
+    <div id="postbox-container-left" class="postbox-container">
+      <?php do_meta_boxes(null, 'left', $post); ?>
+    </div>
+    <div id="postbox-container-right" class="postbox-container">
+      <?php do_meta_boxes(null, 'right', $post); ?>
+    </div>
+  </div>
+  <?php
+}
+
+function third_column_dbx_post_sidebar($post) {
+  $post_type = $post->post_type;
+
+  ?><div id="postbox-container-3" class="postbox-container"><?php
+    do_meta_boxes($post_type, 'column3', $post);
+  ?></div><?php
+}
+
+
+
+
+
+
+
+
+
+// add_action('submitpost_box', 'third_column_edit_form');
+// add_action('submitpage_box', 'third_column_edit_form');
 function third_column_edit_form() {
   global $post;
   $post_type = $post->post_type;
@@ -55,81 +123,4 @@ function third_column_edit_form() {
       tagBox.init();
     });
   </script><?php
-}
-
-/* Options */
-
-//add_action('admin_menu', 'third_column_create_menu');
-function third_column_create_menu () {
-  add_menu_page('Third Column', 'Third Column', 'administrator', __FILE__, 'third_column_settings',plugins_url('/images/icon.png', __FILE__));
-  add_action('admin_init', 'third_column_register_settings');
-}
-
-function third_column_register_settings () {
-  register_setting('third-column', 'cols-post');
-  register_setting('third-column', 'cols-page');
-}
-
-function third_column_settings () {
-  
-}
-
-
-function default_options () {
-  return array(
-    //
-  );
-}
-
-
-
-/* CSS */
-
-add_action('admin_print_styles', 'third_column_css');
-function third_column_css () {
-  ?><style>
-#post #side-info-column {
-  width: 580px;
-}
-
-#post #post-body {
-  margin-right: -620px !important;
-}
-
-#post #post-body-content {
-  margin-right: 600px !important;
-}
-
-#post #column3-sortables {
-  width: 280px;
-  float: right;
-  display: block;
-  min-height: 200px;
-}
-
-#post #side-sortables {
-  float: left;
-  display: block;
-  min-height: 200px;
-}
-
-/* Style copied from #side-sortables */
-
-#post #column3-sortables .category-tabs, #column3-sortables .category-tabs {
-  margin-bottom: 3px;
-}
-
-#post #column3-sortables .category-tabs li, #column3-sortables .add-menu-item-tabs li {
-  display: inline;
-}
-
-#post #column3-sortables .category-tabs a, #column3-sortables .add-menu-item-tabs a {
-  text-decoration: none;
-}
-
-#post #column3-sortables .category-tabs .tabs a, #column3-sortables .add-menu-item-tabs .tabs a {
-  color: #333;
-}
-
-  </style><?php
 }
